@@ -25,6 +25,10 @@ data/puzzles/*
 # Dhat
 dhat-heap.json
 
+# Flamegraph
+perf.data*
+flamegraph*
+
 # Benchmarks
 
 data/timings.json
