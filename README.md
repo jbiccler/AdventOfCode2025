@@ -13,7 +13,12 @@ This repo is based on this [AOC Rust template](https://github.com/fspoettel/adve
 | :---: | :---: | :---: |
 | [Day 1](https://adventofcode.com/2025/day/1) | ⭐ | ⭐ |
 <!--- advent_readme_stars table --->
-
+<!--- benchmarking table --->
 ## Benchmarks
 
+| Day | Part 1 | Part 2 |
+| :---: | :---: | :---:  |
+| [Day 1](./src/bin/01.rs) | `74.8µs` | `74.2µs` |
+
+**Total: 0.15ms**
 <!--- benchmarking table --->
