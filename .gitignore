@@ -12,6 +12,7 @@ target/
 # tmp files
 tmp/
 python/
+.zed/
 
 # Added by cargo
 
