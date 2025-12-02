@@ -15,17 +15,6 @@ fn parse_input(input: &str) -> Vec<(usize, usize)> {
 }
 
 #[inline(always)]
-fn _twice_repeating(id: usize) -> bool {
-    // Basic way of doing it by converting to string but slower
-    let s = id.to_string();
-    let n = s.len();
-    let n_half = n / 2;
-    let a = &s.as_bytes()[..n_half];
-    let b = &s.as_bytes()[n_half..];
-    a == b
-}
-
-#[inline(always)]
 fn twice_repeating_num(id: usize) -> bool {
     let n = id.ilog10() + 1;
     let n_half = n / 2;
@@ -34,11 +23,11 @@ fn twice_repeating_num(id: usize) -> bool {
 }
 
 #[inline(always)]
-fn even_digits(n: usize) -> bool {
-    if n == 0 {
+fn even_digits(id: usize) -> bool {
+    if id == 0 {
         return false;
     }
-    (n.ilog10() + 1) % 2 == 0
+    (id.ilog10() + 1) % 2 == 0
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -56,26 +45,9 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 #[inline(always)]
-fn _n_repeating(id: usize) -> bool {
-    // Basic way of doing it by converting to string but slower
-    let s = id.to_string();
-    let n = s.len();
-    let n_half = n / 2;
-    for k in 1..=n_half {
-        if n % k == 0 {
-            let first_str = s[..k].as_bytes();
-            if s[k..].as_bytes().chunks(k).all(|x| x == first_str) {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-#[inline(always)]
 fn n_repeating_num(id: usize) -> bool {
     let n = id.ilog10() + 1;
-    // Precomupte powers
+    // Precompute powers
     let mut pow10 = [1usize; 20];
     for i in 1..pow10.len() {
         pow10[i] = pow10[i - 1] * 10;
