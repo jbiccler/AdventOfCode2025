@@ -12,25 +12,25 @@ fn parse_input(input: &str) -> Vec<Vec<u8>> {
 #[inline(always)]
 fn get_joltage(bank: &[u8], num_digits: usize) -> u64 {
     let n = bank.len();
-    // Track max value and index per selected digit
-    let mut max_val = vec![0; num_digits];
-    let mut max_idx = vec![0; num_digits];
-    // Track overall result
+    let mut next_start = 0;
     let mut res = 0;
     for i in 0..num_digits {
         // Setup window to look at, start looking at window size = n - num_digits + 1 left most digits
         // (look at one more digit than we are allowed to skip)
         // And decrease window size as we select digits
-        let start = if i > 0 { max_idx[i - 1] + 1 } else { 0 };
+        let start = next_start;
         let end = n - num_digits + 1 + i;
+        let mut max_val = 0u8;
+        let mut max_idx = 0;
         for j in start..end {
-            if bank[j] > max_val[i] {
-                max_idx[i] = j;
-                max_val[i] = bank[j];
+            if bank[j] > max_val {
+                max_val = bank[j];
+                max_idx = j;
             }
         }
+        next_start = max_idx + 1;
         res *= 10;
-        res += max_val[i] as u64;
+        res += max_val as u64;
     }
     res
 }
@@ -42,7 +42,7 @@ pub fn part_one(input: &str) -> Option<u64> {
 
 pub fn part_two(input: &str) -> Option<u64> {
     let banks = parse_input(input);
-    Some(banks.into_iter().map(|b| get_joltage(&b, 12)).sum())
+    Some(banks.iter().map(|b| get_joltage(b, 12)).sum())
 }
 
 #[cfg(test)]
