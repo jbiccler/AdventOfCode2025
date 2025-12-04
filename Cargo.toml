@@ -34,3 +34,5 @@ pico-args = "0.5.0"
 tinyjson = "2.5.1"
 
 # Solution dependencies
+image = "0.24.5"
+gif = "0.12"
