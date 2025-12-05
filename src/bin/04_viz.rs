@@ -9,7 +9,7 @@ const GIF_PATH: &str = "./media/day04_part2.gif";
 const COLOR_TRUE: Rgb<u8> = Rgb([173, 216, 230]); // Pastel Blue
 const COLOR_FALSE: Rgb<u8> = Rgb([0, 0, 0]); // Black
 const COLOR_UPDATED: Rgb<u8> = Rgb([225, 182, 193]); // Pastel Pink
-const UPSCALE: u32 = 10;
+const UPSCALE: u32 = 4;
 const NR_REMOVED_PER_FRAME: usize = 20;
 
 const MAX_COUNT: u8 = 4;
