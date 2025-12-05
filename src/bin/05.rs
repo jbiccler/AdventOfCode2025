@@ -24,9 +24,9 @@ fn parse_input(input: &str) -> Result<(Vec<(u64, u64)>, Vec<u64>)> {
     let ings = ings
         .lines()
         .map(|l| {
-            Ok(l.trim()
+            l.trim()
                 .parse::<u64>()
-                .context("Failed to parse ingredient")?)
+                .context("Failed to parse ingredient")
         })
         .collect::<Result<Vec<u64>>>()?;
     Ok((rngs, ings))
