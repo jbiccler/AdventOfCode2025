@@ -62,8 +62,13 @@ pub fn part_one(input: &str) -> Option<u64> {
     let merged = merge_ranges(&mut rngs);
     Some(
         ings.iter()
-            .filter(|&i| merged.iter().any(|(a, b)| i <= b && i >= a))
-            .count() as u64,
+            .map(|&i| {
+                // Parition point returns the fist where index of the second partition (start where predicate = false) assuming merged is sorted based on the predicate.
+                // +- binary search
+                let p = merged.partition_point(|(_, b)| i > *b);
+                merged.get(p).map_or(0, |(a, _)| u64::from(i >= *a))
+            })
+            .sum::<u64>(),
     )
 }
 
