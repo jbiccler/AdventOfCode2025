@@ -4,6 +4,20 @@ lto = "fat"
 opt-level = 3
 overflow-checks = false
 
+[profile.profiling]
+inherits = "release"
+opt-level = 1
+# Crucial for perf stack unwinding
+debug = true
+strip = false
+debug-assertions = false
+# Prevent overly aggressive inlining/LTO
+lto = false
+codegen-units = 16
+
+# Optional: enable frame pointers to improve perf’s unwinding accuracy
+force-frame-pointers = true
+
 [package]
 name = "advent_of_code"
 version = "0.12.0"

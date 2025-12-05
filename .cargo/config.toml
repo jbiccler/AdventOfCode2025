@@ -13,3 +13,6 @@ AOC_YEAR = "2025"
 
 [build]
 rustflags = ["-C", "target-cpu=native"]
+
+[target.'cfg(all())']
+rustflags = ["-C", "force-frame-pointers=yes"]
