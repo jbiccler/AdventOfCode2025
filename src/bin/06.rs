@@ -8,20 +8,20 @@ enum Operation {
 
 #[derive(Debug, Clone)]
 struct Instruction {
-    data: Vec<u128>,
+    data: Vec<u64>,
     op: Operation,
 }
 impl Instruction {
-    fn default(data: Vec<u128>) -> Self {
+    fn default(data: Vec<u64>) -> Self {
         Self {
             data,
             op: Operation::Add,
         }
     }
-    fn calculate_value(&self) -> u128 {
+    fn calculate_value(&self) -> u64 {
         match self.op {
-            Operation::Add => self.data.iter().sum::<u128>(),
-            Operation::Mul => self.data.iter().product::<u128>(),
+            Operation::Add => self.data.iter().sum::<u64>(),
+            Operation::Mul => self.data.iter().product::<u64>(),
         }
     }
 
@@ -48,7 +48,7 @@ fn parse_input(input: &str) -> (Vec<&str>, Vec<usize>, usize) {
     (input, col_idx, n_lines)
 }
 
-pub fn part_one(input: &str) -> Option<u128> {
+pub fn part_one(input: &str) -> Option<u64> {
     let (input, col_idx, n_lines) = parse_input(input);
     let mut ins = Instruction::default(vec![]);
     let mut total = 0;
@@ -65,7 +65,7 @@ pub fn part_one(input: &str) -> Option<u128> {
         // Collect digits
         for &row in input[0..n_lines - 1].iter() {
             let stop = end.min(row.len());
-            let c = row[start..stop].trim().parse::<u128>().unwrap();
+            let c = row[start..stop].trim().parse::<u64>().unwrap();
             ins.data.push(c);
         }
         total += ins.calculate_value();
@@ -73,7 +73,7 @@ pub fn part_one(input: &str) -> Option<u128> {
     Some(total)
 }
 
-pub fn part_two(input: &str) -> Option<u128> {
+pub fn part_two(input: &str) -> Option<u64> {
     let (input, col_idx, n_lines) = parse_input(input);
     let mut ins = Instruction::default(vec![]);
     let mut total = 0;
@@ -95,7 +95,7 @@ pub fn part_two(input: &str) -> Option<u128> {
                     let val = &row[c..=c];
                     if val != " " {
                         num *= 10;
-                        num += val.parse::<u128>().unwrap();
+                        num += val.parse::<u64>().unwrap();
                     }
                 }
             }
