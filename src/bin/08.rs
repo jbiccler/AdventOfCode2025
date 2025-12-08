@@ -1,7 +1,8 @@
 use itertools::Itertools;
+use std::collections::HashSet;
 advent_of_code::solution!(8);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 struct Junction {
     x: u64,
     y: u64,
@@ -28,11 +29,6 @@ impl PartialEq for Pair {
     fn eq(&self, other: &Self) -> bool {
         (self.a == other.a && self.b == other.b) || (self.a == other.b) && (self.b == other.a)
     }
-}
-
-#[derive(Debug)]
-struct Circuit {
-    data: Vec<Junction>,
 }
 
 fn distance_vec(junctions: Vec<Junction>) -> Vec<Pair> {
@@ -77,8 +73,12 @@ fn parse_input(input: &str) -> Vec<Junction> {
         .collect()
 }
 
-fn shortest_connections(dist: &mut Vec<Pair>, n: usize) -> Vec<Circuit> {
-    let mut circuits: Vec<Circuit> = vec![];
+fn shortest_connections(
+    dist: &mut Vec<Pair>,
+    n_connections: usize,
+    n_junctions: usize,
+) -> Option<u64> {
+    let mut circuits: Vec<HashSet<Junction>> = vec![];
     let mut count = 0;
     let mut added;
     let mut a_idx = None;
@@ -86,122 +86,73 @@ fn shortest_connections(dist: &mut Vec<Pair>, n: usize) -> Vec<Circuit> {
     while let Some(p) = dist.pop() {
         added = false;
         for (i, c) in circuits.iter().enumerate() {
-            if c.data.contains(&p.a) {
+            if c.iter().contains(&p.a) {
                 a_idx = Some(i);
             }
-            if c.data.contains(&p.b) {
+            if c.iter().contains(&p.b) {
                 b_idx = Some(i);
             }
         }
         if let Some(a) = a_idx {
             if b_idx.is_none() {
-                circuits[a].data.push(p.b)
-            } else if a_idx == b_idx {
-                // Do nothing
-            } else {
+                // b is new
+                circuits[a].insert(p.b);
+            } else if a_idx != b_idx {
                 // Combine both networks
-                let mut b_cpy = circuits[b_idx.unwrap()].data.clone();
-                circuits[a].data.append(&mut b_cpy);
-                circuits.remove(b_idx.unwrap());
+                let b = b_idx.unwrap();
+                let (a, b) = if a < b { (a, b) } else { (b, a) };
+                let (left, right) = circuits.split_at_mut(b);
+                left[a].extend(&right[0]);
+                circuits.remove(b);
             }
             added = true;
         } else if let Some(b) = b_idx {
             if a_idx.is_none() {
-                circuits[b].data.push(p.a)
-            } else if a_idx == b_idx {
-                // Do nothing
-            } else {
+                // a is new
+                circuits[b].insert(p.a);
+            } else if a_idx != b_idx {
                 // Combine both networks
-                let mut a_cpy = circuits[a_idx.unwrap()].data.clone();
-                circuits[b].data.append(&mut a_cpy);
-                circuits.remove(a_idx.unwrap());
+                let a = a_idx.unwrap();
+                let (a, b) = if a < b { (a, b) } else { (b, a) };
+                let (left, right) = circuits.split_at_mut(b);
+                left[a].extend(&right[0]);
+                circuits.remove(b);
             }
             added = true;
         }
         if !added {
             // None of the circuits contained a or b -> create new circuit
-            circuits.push(Circuit {
-                data: vec![p.a, p.b],
-            });
+            circuits.push(HashSet::from([p.a, p.b]));
         }
         a_idx = None;
         b_idx = None;
         count += 1;
-        if count >= n {
+        // Part 1 limits number of connections to make
+        if count >= n_connections {
             break;
         }
-    }
-    circuits.sort_unstable_by(|a, b| b.data.len().cmp(&a.data.len()));
-    circuits
-}
-
-pub fn part_one(input: &str) -> Option<usize> {
-    let junc = parse_input(input);
-    let mut dist = distance_vec(junc);
-    let circuits = shortest_connections(&mut dist, 1000);
-    Some(circuits.iter().take(3).map(|c| c.data.len()).product())
-}
-
-fn shortest_connections_single_circuit(dist: &mut Vec<Pair>, n: usize) -> Option<u64> {
-    let mut circuits: Vec<Circuit> = vec![];
-    let mut added;
-    let mut a_idx = None;
-    let mut b_idx = None;
-    while let Some(p) = dist.pop() {
-        added = false;
-        for (i, c) in circuits.iter().enumerate() {
-            if c.data.contains(&p.a) {
-                a_idx = Some(i);
-            }
-            if c.data.contains(&p.b) {
-                b_idx = Some(i);
-            }
-        }
-        if let Some(a) = a_idx {
-            if b_idx.is_none() {
-                circuits[a].data.push(p.b)
-            } else if a_idx == b_idx {
-                // Do nothing
-            } else {
-                // Combine both networks
-                let mut b_cpy = circuits[b_idx.unwrap()].data.clone();
-                circuits[a].data.append(&mut b_cpy);
-                circuits.remove(b_idx.unwrap());
-            }
-            added = true;
-        } else if let Some(b) = b_idx {
-            if a_idx.is_none() {
-                circuits[b].data.push(p.a)
-            } else if a_idx == b_idx {
-                // Do nothing
-            } else {
-                // Combine both networks
-                let mut a_cpy = circuits[a_idx.unwrap()].data.clone();
-                circuits[b].data.append(&mut a_cpy);
-                circuits.remove(a_idx.unwrap());
-            }
-            added = true;
-        }
-        if !added {
-            // None of the circuits contained a or b -> create new circuit
-            circuits.push(Circuit {
-                data: vec![p.a, p.b],
-            });
-        }
-        a_idx = None;
-        b_idx = None;
-        if circuits.len() == 1 && circuits[0].data.len() == n {
+        // Part 2 requires you to assign all n junctions and return product of x coordinates of last 2
+        if circuits.len() == 1 && circuits[0].len() == n_junctions {
             return Some(p.a.x * p.b.x);
         }
     }
-    None
+    // Part 1 return
+    circuits.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
+    Some(circuits.iter().take(3).map(|c| c.len() as u64).product())
+}
+
+pub fn part_one(input: &str) -> Option<u64> {
+    let junc = parse_input(input);
+    let n = junc.len();
+    let mut dist = distance_vec(junc);
+    shortest_connections(&mut dist, 1000, n)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
     let junc = parse_input(input);
     let n = junc.len();
     let mut dist = distance_vec(junc);
-    shortest_connections_single_circuit(&mut dist, n)
+    shortest_connections(&mut dist, usize::MAX, n)
 }
 
 #[cfg(test)]
@@ -212,9 +163,9 @@ mod tests {
     fn test_part_one() {
         let input = &advent_of_code::template::read_file("examples", DAY);
         let junc = parse_input(input);
+        let n = junc.len();
         let mut dist = distance_vec(junc);
-        let circuits = shortest_connections(&mut dist, 10);
-        let result = Some(circuits.iter().take(3).map(|c| c.data.len()).product());
+        let result = shortest_connections(&mut dist, 10, n);
         assert_eq!(result, Some(40));
     }
 
