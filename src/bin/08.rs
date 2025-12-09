@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use std::collections::HashSet;
 advent_of_code::solution!(8);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -18,36 +17,72 @@ impl Junction {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-struct Pair {
-    a: Junction,
-    b: Junction,
-    dist: f64,
+#[derive(Debug, Clone)]
+struct Dsu {
+    parent: Vec<usize>,
+    size: Vec<usize>,
 }
 
-impl PartialEq for Pair {
-    fn eq(&self, other: &Self) -> bool {
-        (self.a == other.a && self.b == other.b) || (self.a == other.b) && (self.b == other.a)
+impl Dsu {
+    fn new(n: usize) -> Self {
+        Self {
+            parent: (0..n).collect(),
+            size: vec![1; n],
+        }
+    }
+
+    #[inline]
+    fn find(&mut self, x: usize) -> usize {
+        if self.parent[x] != x {
+            self.parent[x] = self.find(self.parent[x]);
+        }
+        self.parent[x]
+    }
+
+    #[inline]
+    fn union(&mut self, a: usize, b: usize) -> bool {
+        let mut ra = self.find(a);
+        let mut rb = self.find(b);
+        if ra == rb {
+            // a and b are in the same component
+            return false;
+        }
+        // Make a represent the one with the largest size
+        if self.size[ra] < self.size[rb] {
+            std::mem::swap(&mut ra, &mut rb);
+        }
+        // Set component of b equal to a and update sizes
+        self.parent[rb] = ra;
+        self.size[ra] += self.size[rb];
+        true
+    }
+
+    #[inline]
+    fn component_size(&mut self, x: usize) -> usize {
+        let r = self.find(x);
+        self.size[r]
     }
 }
 
-fn distance_vec(junctions: Vec<Junction>) -> Vec<Pair> {
-    let mut dist: Vec<Pair> = junctions
-        .into_iter()
-        .combinations(2)
-        .map(|comb| {
-            let a = comb[0];
-            let b = comb[1];
-            Pair {
-                a,
-                b,
-                dist: a.distance(&b),
-            }
+#[derive(Debug, Copy, Clone)]
+struct Pair {
+    a: usize,
+    b: usize,
+    dist: f64,
+}
+
+fn distance_vec(junctions: &[Junction]) -> Vec<Pair> {
+    let mut dist = (0..junctions.len())
+        .tuple_combinations()
+        .map(|(i, j)| Pair {
+            a: i,
+            b: j,
+            dist: junctions[i].distance(&junctions[j]),
         })
-        .collect();
+        .collect::<Vec<Pair>>();
     dist.sort_unstable_by(|a, b| {
-        b.dist
-            .partial_cmp(&a.dist)
+        a.dist
+            .partial_cmp(&b.dist)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
     dist
@@ -74,85 +109,51 @@ fn parse_input(input: &str) -> Vec<Junction> {
 }
 
 fn shortest_connections(
-    dist: &mut Vec<Pair>,
+    junctions: &[Junction],
+    dist: &mut [Pair],
     n_connections: usize,
-    n_junctions: usize,
 ) -> Option<u64> {
-    let mut circuits: Vec<HashSet<Junction>> = vec![];
-    let mut count = 0;
-    let mut added;
-    let mut a_idx = None;
-    let mut b_idx = None;
-    while let Some(p) = dist.pop() {
-        added = false;
-        for (i, c) in circuits.iter().enumerate() {
-            if c.iter().contains(&p.a) {
-                a_idx = Some(i);
+    let n_junctions = junctions.len();
+    let mut dsu = Dsu::new(n_junctions);
+    let mut merges = 0;
+
+    for p in dist.iter() {
+        merges += 1;
+        if dsu.union(p.a, p.b) {
+            // Part 2: all junctions are joined in one component
+            if dsu.component_size(p.a) == n_junctions {
+                return Some(junctions[p.a].x * junctions[p.b].x);
             }
-            if c.iter().contains(&p.b) {
-                b_idx = Some(i);
+            // Part 1
+            if merges >= n_connections {
+                break;
             }
-        }
-        if let Some(a) = a_idx {
-            if b_idx.is_none() {
-                // b is new
-                circuits[a].insert(p.b);
-            } else if a_idx != b_idx {
-                // Combine both networks
-                let b = b_idx.unwrap();
-                let (a, b) = if a < b { (a, b) } else { (b, a) };
-                let (left, right) = circuits.split_at_mut(b);
-                left[a].extend(&right[0]);
-                circuits.remove(b);
-            }
-            added = true;
-        } else if let Some(b) = b_idx {
-            if a_idx.is_none() {
-                // a is new
-                circuits[b].insert(p.a);
-            } else if a_idx != b_idx {
-                // Combine both networks
-                let a = a_idx.unwrap();
-                let (a, b) = if a < b { (a, b) } else { (b, a) };
-                let (left, right) = circuits.split_at_mut(b);
-                left[a].extend(&right[0]);
-                circuits.remove(b);
-            }
-            added = true;
-        }
-        if !added {
-            // None of the circuits contained a or b -> create new circuit
-            circuits.push(HashSet::from([p.a, p.b]));
-        }
-        a_idx = None;
-        b_idx = None;
-        count += 1;
-        // Part 1 limits number of connections to make
-        if count >= n_connections {
-            break;
-        }
-        // Part 2 requires you to assign all n junctions and return product of x coordinates of last 2
-        if circuits.len() == 1 && circuits[0].len() == n_junctions {
-            return Some(p.a.x * p.b.x);
         }
     }
-    // Part 1 return
-    circuits.sort_unstable_by(|a, b| b.len().cmp(&a.len()));
-    Some(circuits.iter().take(3).map(|c| c.len() as u64).product())
+    // Part 1
+    // Get sizes of the roots
+    let mut sizes = vec![];
+    for i in 0..n_junctions {
+        let root = dsu.find(i);
+        if root == i {
+            sizes.push(dsu.size[root] as u64);
+        }
+    }
+    // Sort in descending order and take product of top 3
+    sizes.sort_unstable_by(|a, b| b.cmp(a));
+    Some(sizes.iter().take(3).product::<u64>())
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
     let junc = parse_input(input);
-    let n = junc.len();
-    let mut dist = distance_vec(junc);
-    shortest_connections(&mut dist, 1000, n)
+    let mut dist = distance_vec(&junc);
+    shortest_connections(&junc, &mut dist, 1000)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
     let junc = parse_input(input);
-    let n = junc.len();
-    let mut dist = distance_vec(junc);
-    shortest_connections(&mut dist, usize::MAX, n)
+    let mut dist = distance_vec(&junc);
+    shortest_connections(&junc, &mut dist, usize::MAX)
 }
 
 #[cfg(test)]
@@ -163,9 +164,8 @@ mod tests {
     fn test_part_one() {
         let input = &advent_of_code::template::read_file("examples", DAY);
         let junc = parse_input(input);
-        let n = junc.len();
-        let mut dist = distance_vec(junc);
-        let result = shortest_connections(&mut dist, 10, n);
+        let mut dist = distance_vec(&junc);
+        let result = shortest_connections(&junc, &mut dist, 10);
         assert_eq!(result, Some(40));
     }
 
