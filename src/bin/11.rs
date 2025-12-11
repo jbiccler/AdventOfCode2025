@@ -109,18 +109,22 @@ fn all_paths_containing_two_nodes(
     );
 
     // start -> must_visit2 -> must_visit1 -> end
-    let d = count_paths(
-        graph,
-        start,
-        must_visit2,
-        Some(must_visit1),
-        &mut vec![None; graph.len()],
-    );
     let e = count_paths(
         graph,
         must_visit2,
         must_visit1,
         None,
+        &mut vec![None; graph.len()],
+    );
+    if e == 0 {
+        // dac -> fft seems to be empty on most (?all?) inputs
+        return a * b * c;
+    }
+    let d = count_paths(
+        graph,
+        start,
+        must_visit2,
+        Some(must_visit1),
         &mut vec![None; graph.len()],
     );
     let f = count_paths(
@@ -130,7 +134,6 @@ fn all_paths_containing_two_nodes(
         Some(must_visit2),
         &mut vec![None; graph.len()],
     );
-
     a * b * c + d * e * f
 }
 
