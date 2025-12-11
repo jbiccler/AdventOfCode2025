@@ -54,7 +54,7 @@ fn count_paths(
     start: usize,
     end: usize,
     skip: Option<usize>,
-    memo: &mut HashMap<usize, u64>,
+    memo: &mut Vec<Option<u64>>,
 ) -> u64 {
     // Base case
     if start == end {
@@ -62,7 +62,7 @@ fn count_paths(
     }
 
     // DAG memoization
-    if let Some(&cached) = memo.get(&start) {
+    if let Some(cached) = memo[start] {
         return cached;
     }
 
@@ -74,7 +74,7 @@ fn count_paths(
         }
         total += count_paths(graph, v, end, skip, memo)
     }
-    memo.insert(start, total);
+    memo[start] = Some(total);
     total
 }
 
@@ -91,15 +91,21 @@ fn all_paths_containing_two_nodes(
         start,
         must_visit1,
         Some(must_visit2),
-        &mut HashMap::new(),
+        &mut vec![None; graph.len()],
     );
-    let b = count_paths(graph, must_visit1, must_visit2, None, &mut HashMap::new());
+    let b = count_paths(
+        graph,
+        must_visit1,
+        must_visit2,
+        None,
+        &mut vec![None; graph.len()],
+    );
     let c = count_paths(
         graph,
         must_visit2,
         end,
         Some(must_visit1),
-        &mut HashMap::new(),
+        &mut vec![None; graph.len()],
     );
 
     // start -> must_visit2 -> must_visit1 -> end
@@ -108,16 +114,21 @@ fn all_paths_containing_two_nodes(
         start,
         must_visit2,
         Some(must_visit1),
-        &mut HashMap::new(),
+        &mut vec![None; graph.len()],
     );
-
-    let e = count_paths(graph, must_visit2, must_visit1, None, &mut HashMap::new());
+    let e = count_paths(
+        graph,
+        must_visit2,
+        must_visit1,
+        None,
+        &mut vec![None; graph.len()],
+    );
     let f = count_paths(
         graph,
         must_visit1,
         end,
         Some(must_visit2),
-        &mut HashMap::new(),
+        &mut vec![None; graph.len()],
     );
 
     a * b * c + d * e * f
@@ -127,8 +138,13 @@ pub fn part_one(input: &str) -> Option<u64> {
     let (graph, id_map) = parse_input(input);
     let start = id_map["you"];
     let end = id_map["out"];
-    let mut memo = HashMap::new();
-    Some(count_paths(&graph, start, end, None, &mut memo))
+    Some(count_paths(
+        &graph,
+        start,
+        end,
+        None,
+        &mut vec![None; graph.len()],
+    ))
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
